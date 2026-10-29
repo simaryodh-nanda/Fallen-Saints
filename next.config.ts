@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: { qualities: [70, 75, 80] },
   /* config options here */
   experimental: {
     agentFeedback: true,
