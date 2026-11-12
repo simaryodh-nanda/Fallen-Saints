@@ -207,7 +207,7 @@ export function Story() {
         <div aria-hidden className="sticky top-0 -mb-[100svh] z-0 h-svh overflow-hidden bg-bone">
           <div data-k="cam" className="absolute left-0 top-0 h-[1198px] w-[760px] origin-top-left will-change-transform">
             <Image unoptimized src="/story/story-shadow.png" alt="" width={880} height={1318} className="absolute -left-[60px] -top-[42px] h-[1318px] w-[880px] max-w-none" />
-            <Image unoptimized priority src="/story/story-shirt.png" alt="" width={760} height={1198} className="absolute inset-0 size-full max-w-none" />
+            <Image unoptimized loading="eager" fetchPriority="high" src="/story/story-shirt.png" alt="" width={760} height={1198} className="absolute inset-0 size-full max-w-none" />
             <Image unoptimized data-k="blurL" src="/story/story-shirt-blur.png" alt="" width={760} height={1198} className="absolute inset-0 size-full max-w-none opacity-0"
               style={{ maskImage: "radial-gradient(circle 120px at 520px 490px,rgba(0,0,0,0) 45%,#000 100%)", WebkitMaskImage: "radial-gradient(circle 120px at 520px 490px,rgba(0,0,0,0) 45%,#000 100%)" }} />
             <div className="absolute inset-0 overflow-hidden" style={{ maskImage: "url(/story/mask-front.png)", WebkitMaskImage: "url(/story/mask-front.png)", maskSize: "100% 100%", WebkitMaskSize: "100% 100%", maskRepeat: "no-repeat", WebkitMaskRepeat: "no-repeat" }}>

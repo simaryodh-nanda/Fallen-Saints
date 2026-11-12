@@ -183,7 +183,7 @@ export function DropFile() {
                     <div className="relative size-full min-h-0 [container-type:size]">
                       <div data-fg={i} className="absolute left-1/2 top-0 h-[min(100cqh,160cqw)] origin-[50%_3%] will-change-transform" style={{ transform: "translateX(-50%)" }}>
                         <div data-lp="" data-lpi={i} data-gvw={p.id} className="relative h-full cursor-zoom-in">
-                          <Image data-gar="" className={`block h-full w-auto max-w-none drop-shadow-[0_30px_28px_rgba(0,0,0,.32)] transition-opacity duration-[550ms] ease-out-expo ${cur === 0 ? "opacity-100" : "opacity-0"}`} src={p.img.src} width={p.img.w} height={p.img.h} alt={`${p.name} — ${p.colour}, front`} sizes="(max-width: 1100px) 40vw, 32vw" priority={i === 0} />
+                          <Image data-gar="" className={`block h-full w-auto max-w-none drop-shadow-[0_30px_28px_rgba(0,0,0,.32)] transition-opacity duration-[550ms] ease-out-expo ${cur === 0 ? "opacity-100" : "opacity-0"}`} src={p.img.src} width={p.img.w} height={p.img.h} alt={`${p.name} — ${p.colour}, front`} sizes="(max-width: 1100px) 40vw, 32vw" loading={i === 0 ? "eager" : "lazy"} />
                           <div data-lpl="" aria-hidden className={`pointer-events-none absolute inset-0 [clip-path:circle(0px_at_50%_50%)] ${cur === 0 ? "opacity-100" : "opacity-0"}`} style={{ background: p.field }}>
                             <div data-lpz="" className="absolute inset-0 scale-[2.6]">
                               <Image src={p.img.src} width={p.img.w} height={p.img.h} alt="" sizes="60vw" className="size-full max-w-none object-contain" />

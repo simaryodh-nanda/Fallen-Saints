@@ -47,7 +47,7 @@ function Panel({ open, onClose }: { open: Open; onClose: () => void }) {
         {/* the shirt */}
         <div className="relative flex h-[34dvh] items-center justify-center overflow-hidden tab:h-auto">
           <span className="label absolute left-5 top-5 text-[11px]" style={{ color: p.mut }}>{p.code} — {p.colour}</span>
-          <Image key={shown.src} data-gar="" src={shown.src} width={shown.w} height={shown.h} alt={`${p.name} — ${p.colour}, ${side}`} sizes="(max-width: 760px) 60vw, 440px" priority
+          <Image key={shown.src} data-gar="" src={shown.src} width={shown.w} height={shown.h} alt={`${p.name} — ${p.colour}, ${side}`} sizes="(max-width: 760px) 60vw, 440px" loading="eager"
             className="h-[88%] w-auto max-w-none animate-[qvIn_.6s_cubic-bezier(.2,.8,.1,1)] drop-shadow-[0_30px_28px_rgba(0,0,0,.32)] tab:h-[78%]" />
           {p.back && (
             <div role="group" aria-label="Front or back" className="absolute inset-x-0 bottom-5 mx-auto flex w-fit gap-0.5 border p-[3px]" style={{ borderColor: p.line }}>

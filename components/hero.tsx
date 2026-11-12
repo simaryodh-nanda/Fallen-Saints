@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { PIECES, inr, type Piece } from "@/lib/pieces";
 import { cl, EASE, frame, goPiece, oc, reduced } from "@/lib/motion";
 import { Halo, HALO_TONES } from "./halo";
+import { INTRO_EVT, introActive, type IntroPhase } from "@/lib/intro";
 
 const [A, B] = PIECES;
 /** Where the seam rests: the middle, splitting the two shirts. */
@@ -25,7 +26,7 @@ function WingSlot({ side }: { side: "left" | "right" }) {
   const img = (kind: "angel" | "fallen", on: boolean) => {
     const r = ROOT[kind], flip = left ? kind === "fallen" : kind === "angel", rx = flip ? 1 - r.x : r.x;
     return (
-      <Image data-wv={kind} src={`/wings/${kind}-wing.png`} width={r.w} height={r.h} alt="" sizes="(max-width: 760px) 70vh, 82vh" quality={80}
+      <Image data-wv={kind} src={`/wings/${kind}-wing.png`} width={r.w} height={r.h} alt="" sizes="(max-width: 760px) 70vh, 82vh" quality={80} loading="eager"
         className={`absolute h-auto max-w-none ${flip ? "-scale-x-100" : ""} ${kind === "angel" ? "drop-shadow-[0_24px_30px_rgba(15,14,13,.35)]" : "drop-shadow-[0_24px_30px_rgba(0,0,0,.55)]"}`}
         style={{ width: "var(--ww)", left: `calc(var(--ww) * ${-rx})`, top: `calc(var(--ww) * ${-r.y.toFixed(4)})`, opacity: on ? 1 : 0 }} />
     );
@@ -51,7 +52,7 @@ function Layer({ p, dark }: { p: Piece; dark: boolean }) {
       </div>
       <div data-k="hg" className="pointer-events-none absolute left-1/2 top-[17svh] h-[48svh] origin-[50%_0] will-change-transform tab:top-[18vh] tab:h-[62vh]" style={{ transform: "translateX(-50%)" }}>
         <Image
-          src={p.img.src} width={p.img.w} height={p.img.h} priority
+          src={p.img.src} width={p.img.w} height={p.img.h} loading="eager" fetchPriority="high"
           alt={dark ? "" : `${p.name} — ${p.colour} T-shirt on a hanger`}
           sizes="(max-width: 900px) 60vw, 34vw"
           className={`h-full w-auto max-w-none ${dark ? "drop-shadow-[0_30px_34px_rgba(0,0,0,.55)]" : "drop-shadow-[0_30px_28px_rgba(15,14,13,.22)]"}`}
@@ -61,9 +62,7 @@ function Layer({ p, dark }: { p: Piece; dark: boolean }) {
         data-halo="" data-k="info" data-side={dark ? "right" : "left"} tabIndex={dark ? -1 : 0} onClick={() => goPiece(dark ? 1 : 0)}
         className={`absolute top-[19vh] z-10 hidden cursor-pointer flex-col gap-2 border-0 bg-transparent p-0 text-inherit mid:flex ${dark ? "right-[clamp(16px,4vw,56px)] items-end text-right" : "left-[clamp(16px,4vw,56px)] items-start text-left"}`}
       >
-        <span className="label" style={{ color: p.mut }}>{p.no} — {p.colour} / {p.tech.split(" ")[0].toLowerCase()}</span>
         <span className="text-[32px] font-bold uppercase leading-[.9] font-stretch-[72%]">{p.name}</span>
-        <span className="label border-b border-current pb-[3px]">{inr(p.price)} — View piece</span>
       </button>
       <div className="absolute inset-x-[clamp(16px,4vw,56px)] bottom-[clamp(20px,4.5vh,48px)] flex flex-wrap items-end justify-between gap-x-10 gap-y-[22px]">
         <div data-k="heroFade" className="flex max-w-[560px] flex-col gap-5">
@@ -104,27 +103,43 @@ export function Hero() {
     );
     const H = innerHeight;
 
-    // Spring state: seam position, garment drop/swing, halo drop/tilt (same constants as the reference).
-    const S = { x: 100, v: 0, t: 100 };
-    const G = { y: -H * 1.1, vy: 0, a: 0, va: 0 };
+    // Unboxing intro (components/intro.tsx): while the clip plays the hero holds on its dark side with the white tee
+    // already in place; "hero" (sent as the clip crossfades out) settles the tee and starts the usual entrance.
+    const held = !rm && introActive();
+    let hold = held, pull = false;
+
+    // Spring state: seam position, garment drop/swing/depth, halo drop/tilt (same constants as the reference).
+    const S = held ? { x: 0, v: 0, t: 0 } : { x: 100, v: 0, t: 100 };
+    const G = { y: held ? H * 0.03 : -H * 1.1, vy: 0, a: 0, va: 0, s: held ? 0.96 : 1, vs: 0 };
     const L = { y: -H * 0.8, vy: 0, r: -34, vr: 0 };
-    const t0 = performance.now();
+    let t0 = held ? Infinity : performance.now();
     let intro = true;
     let drag = false;
+    const wm = [...el.querySelectorAll<HTMLElement>('[data-k="wm"]')], fades = [...el.querySelectorAll<HTMLElement>('[data-k="heroFade"]')];
 
+    const entrance = (fadeDelay: number) => {
+      wm.forEach((n, i) => { n.style.transform = ""; n.animate([{ transform: "translateY(105%)" }, { transform: "translateY(0)" }], { duration: 1100, delay: 260 + (i % 2) * 110, easing: EASE, fill: "backwards" }); });
+      fades.forEach((n) => { n.style.opacity = ""; n.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 700, delay: fadeDelay, easing: EASE, fill: "backwards" }); });
+    };
     const skip = () => {
-      intro = false;
-      S.x = S.t = REST; S.v = 0; G.y = 0; G.vy = 0; L.y = 0; L.vy = 0; L.r = -9;
-      el.querySelectorAll<HTMLElement>('[data-k="wm"],[data-k="heroFade"]').forEach((n) => n.getAnimations().forEach((a) => a.finish()));
+      intro = false; hold = false; pull = true; t0 = Math.min(t0, performance.now() - 5000);
+      S.x = S.t = REST; S.v = 0; G.y = 0; G.vy = 0; G.s = 1; G.vs = 0; L.y = 0; L.vy = 0; L.r = -9;
+      wm.forEach((n) => (n.style.transform = "")); fades.forEach((n) => (n.style.opacity = ""));
+      [...wm, ...fades].forEach((n) => n.getAnimations().forEach((a) => a.finish()));
     };
 
     if (rm) skip();
-    else {
-      el.querySelectorAll<HTMLElement>('[data-k="wm"]').forEach((n, i) =>
-        n.animate([{ transform: "translateY(105%)" }, { transform: "translateY(0)" }], { duration: 1100, delay: 260 + (i % 2) * 110, easing: EASE, fill: "backwards" }));
-      el.querySelectorAll<HTMLElement>('[data-k="heroFade"]').forEach((n) =>
-        n.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { duration: 600, delay: 120, easing: EASE, fill: "backwards" }));
-    }
+    else if (held) { wm.forEach((n) => (n.style.transform = "translateY(105%)")); fades.forEach((n) => (n.style.opacity = "0")); }
+    else entrance(120);
+
+    const onIntro = (e: Event) => {
+      const ph = (e as CustomEvent<IntroPhase>).detail;
+      if (ph === "skip") skip();
+      else if (!hold) return;
+      else if (ph === "shirt") { pull = true; G.va += 5; G.vy -= 4; }
+      else if (ph === "hero") { hold = false; pull = true; t0 = performance.now(); entrance(300); }
+    };
+    addEventListener(INTRO_EVT, onIntro);
 
     const heroX = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
@@ -153,12 +168,18 @@ export function Hero() {
         S.v += (S.t - S.x) * 0.03 * fs; S.v *= Math.pow(0.85, fs); S.x += S.v * fs;
         const tA = cl(-S.v * 1.5, -8, 8);
         G.va += (tA - G.a) * 0.06 * fs; G.va *= Math.pow(0.9, fs); G.a += G.va * fs;
-        if (!intro || elapsed > 140) { G.vy += -G.y * 0.04 * fs; G.vy *= Math.pow(0.8, fs); G.y += G.vy * fs; }
+        if (pull || !intro || elapsed > 140) { G.vy += -G.y * (hold ? 0.025 : 0.04) * fs; G.vy *= Math.pow(0.8, fs); G.y += G.vy * fs; }
+        // depth: pulled forward out of the package
+        G.vs += ((hold && !pull ? 0.96 : 1) - G.s) * 0.028 * fs; G.vs *= Math.pow(0.83, fs); G.s += G.vs * fs;
         if (!intro || elapsed > 1150) { L.vy += -L.y * 0.05 * fs; L.vy *= Math.pow(0.78, fs); L.y += L.vy * fs; }
         L.vr += (-9 + G.a * 1.6 - L.r) * 0.05 * fs; L.vr *= Math.pow(0.86, fs); L.r += L.vr * fs;
       }
       if (el.getBoundingClientRect().bottom > 0) {
-        hg.forEach((g) => (g.style.transform = `translateX(-50%) translateY(${G.y.toFixed(1)}px) rotate(${G.a.toFixed(2)}deg)`));
+        const lit = cl((G.s - 0.96) / 0.04), fl = lit < 0.995 ? `brightness(${(0.85 + 0.15 * lit).toFixed(3)})` : "";
+        hg.forEach((g) => {
+          g.style.transform = `translateX(-50%) translateY(${G.y.toFixed(1)}px) rotate(${G.a.toFixed(2)}deg)${G.s < 0.9995 ? ` scale(${G.s.toFixed(4)})` : ""}`;
+          if (g.style.filter !== fl) g.style.filter = fl;
+        });
         // wings: unfold from the shoulders on load, then a slow flap (each side slightly out of phase),
         // a breathing lift, and a flutter that follows how fast the seam is moving
         const open = intro && !rm ? oc(cl((elapsed - 250) / 1500)) : 1;
@@ -174,8 +195,9 @@ export function Hero() {
         const half = ((hg[0]?.offsetWidth ?? 0) / 2 / el.clientWidth) * 100 + 1.5;
         const showL = cl((S.x - (50 + half)) / 3 + 1); // black shirt fully on its own side
         const showR = cl((50 - half - S.x) / 3 + 1); //   white shirt fully on its own side
+        const gate = held ? cl((elapsed - 900) / 500) : 1; // product blocks wait for the entrance after the intro
         info.forEach((n) => {
-          const v = n.dataset.side === "left" ? showL : showR;
+          const v = (n.dataset.side === "left" ? showL : showR) * gate;
           n.style.opacity = v.toFixed(3);
           n.style.pointerEvents = v > 0.66 ? "auto" : "none";
         });
@@ -185,8 +207,8 @@ export function Hero() {
           img.style.opacity = (kind === "angel" ? angel : 1 - angel).toFixed(3);
         });
         if (layB) layB.style.clipPath = `inset(0 0 0 ${S.x.toFixed(2)}%)`;
-        if (seam) seam.style.left = `${S.x.toFixed(2)}%`;
-        if (tag) { tag.style.left = `${S.x.toFixed(2)}%`; tag.style.opacity = String(cl((100 - S.x) / 8)); }
+        if (seam) { seam.style.left = `${S.x.toFixed(2)}%`; seam.style.opacity = String(cl(S.x / 2)); }
+        if (tag) { tag.style.left = `${S.x.toFixed(2)}%`; tag.style.opacity = String(cl((100 - S.x) / 8) * cl(S.x / 8)); }
         if (halo) {
           halo.style.transform = `translate(-50%,${L.y.toFixed(1)}px) rotate(${L.r.toFixed(2)}deg)`;
           const dark = S.x < 44; // the halo sits on the centre line: only once the seam is clearly left of it is it over the dark side
@@ -203,6 +225,7 @@ export function Hero() {
       removeEventListener("wheel", onSkip);
       removeEventListener("touchstart", onSkip);
       removeEventListener("keydown", onSkip);
+      removeEventListener(INTRO_EVT, onIntro);
     };
   }, []);
 

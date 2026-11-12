@@ -99,3 +99,10 @@
 }
 
 @theme { @keyframes qvIn { from { opacity: 0; transform: translateY(26px) scale(.96); } to { opacity: 1; transform: none; } } }
+
+/* Unboxing intro: the package only exists while <body data-intro> is set (by the inline boot script), and the header
+   waits behind it, fading in as the hero's entrance starts. */
+[data-intro-root] { display: none; }
+body[data-intro] [data-intro-root] { display: block; }
+body[data-intro] header { transition: opacity 0.9s var(--ease-out-expo), transform 0.5s, background-color 0.5s; }
+body[data-intro="on"] header { opacity: 0; }
